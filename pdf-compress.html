@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Compress PDF — FileFlip</title>
+    <meta name="description" content="Compress PDF files online in your browser and reduce their file size.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <header class="site-header">
+        <div class="container nav">
+            <a class="brand" href="index.html">
+                <span class="brand-mark">F</span>FileFlip
+            </a>
+
+            <nav>
+                <a href="tools.html">Tools</a>
+                <a href="about.html">About</a>
+            </nav>
+
+            <a class="nav-cta" href="tools.html">
+                All tools →
+            </a>
+        </div>
+    </header>
+
+    <main class="tool-page container">
+
+        <div class="tool-title">
+            <div class="eyebrow">PDF TOOL</div>
+
+            <h1>Compress <span>PDF</span></h1>
+
+            <p>
+                Reduce the size of your PDF directly in your browser.
+            </p>
+        </div>
+
+        <div class="converter">
+
+            <div class="dropzone" id="dropzone">
+
+                <div class="drop-inner">
+
+                    <div class="drop-icon">PDF</div>
+
+                    <h2>Drop your PDF here</h2>
+
+                    <p>
+                        or choose a file from your device
+                    </p>
+
+                    <button class="button primary" id="chooseBtn" type="button">
+                        Choose PDF
+                    </button>
+
+                    <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden>
+
+                </div>
+
+            </div>
+
+            <div id="selected" class="file-pill" hidden></div>
+
+            <div class="tool-controls" id="controls" hidden>
+
+                <div class="control">
+
+                    <label for="quality">
+                        COMPRESSION LEVEL
+                    </label>
+
+                    <select id="quality">
+
+                        <option value="0.75">
+                            Recommended
+                        </option>
+
+                        <option value="0.60">
+                            Smaller file
+                        </option>
+
+                        <option value="0.45">
+                            Smallest file
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <button class="button primary" id="compressBtn" type="button" style="width:100%;margin-top:15px" hidden>
+                Compress PDF
+            </button>
+
+            <div class="progress" id="progress" hidden>
+                <div id="progressBar"></div>
+            </div>
+
+            <div class="status" id="status"></div>
+
+            <div class="results" id="results"></div>
+
+        </div>
+
+        <div class="mini-grid">
+
+            <div class="mini">
+                <strong>Private by design</strong>
+                <span>
+                    Your PDF is processed in your browser.
+                </span>
+            </div>
+
+            <div class="mini">
+                <strong>No account</strong>
+                <span>
+                    Compress files without signing up.
+                </span>
+            </div>
+
+            <div class="mini">
+                <strong>Three levels</strong>
+                <span>
+                    Choose how much you want to reduce the file.
+                </span>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="footer">
+
+        <div class="container footer-bottom">
+            © 2026 FileFlip ·
+            <a href="privacy.html">Privacy</a> ·
+            <a href="terms.html">Terms</a>
+        </div>
+
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs" type="module" id="pdfjs-library">
+    </script>
+
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+    <script type="module" src="js/pdf-compress.js"></script>
+
+</body>
+
+</html>
