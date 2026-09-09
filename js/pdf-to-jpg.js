@@ -4,67 +4,89 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
 const fileInput = document.getElementById("fileInput");
-const dropZone = document.getElementById("dropZone");
-const convertBtn = document.getElementById("convertBtn");
+const dropzone = document.getElementById("dropzone");
+const chooseBtn = document.getElementById("chooseBtn");
+const selected = document.getElementById("selected");
+const controls = document.getElementById("controls");
 const formatSelect = document.getElementById("format");
 const scaleSelect = document.getElementById("scale");
+const convertBtn = document.getElementById("convertBtn");
 const progress = document.getElementById("progress");
+const progressBar = document.getElementById("progressBar");
+const status = document.getElementById("status");
 const results = document.getElementById("results");
 
 let selectedFile = null;
 
-fileInput.addEventListener("change", () => {
-    if (fileInput.files.length > 0) {
-        selectedFile = fileInput.files[0];
-        showSelectedFile();
-    }
-});
-
-dropZone.addEventListener("click", () => {
+// Choose PDF button
+chooseBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
     fileInput.click();
 });
 
-dropZone.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    dropZone.classList.add("dragging");
+// Dropzone click
+dropzone.addEventListener("click", () => {
+    fileInput.click();
 });
 
-dropZone.addEventListener("dragleave", () => {
-    dropZone.classList.remove("dragging");
-});
-
-dropZone.addEventListener("drop", (event) => {
-    event.preventDefault();
-    dropZone.classList.remove("dragging");
-
-    if (event.dataTransfer.files.length > 0) {
-        selectedFile = event.dataTransfer.files[0];
-        showSelectedFile();
+// File selected
+fileInput.addEventListener("change", () => {
+    if (fileInput.files.length > 0) {
+        handleFile(fileInput.files[0]);
     }
 });
 
-function showSelectedFile() {
-    dropZone.querySelector(".drop-title").textContent =
-        selectedFile.name;
+// Drag over
+dropzone.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    dropzone.classList.add("dragging");
+});
 
-    dropZone.querySelector(".drop-subtitle").textContent =
-        "Ready to convert";
+// Drag leave
+dropzone.addEventListener("dragleave", () => {
+    dropzone.classList.remove("dragging");
+});
+
+// Drop file
+dropzone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    dropzone.classList.remove("dragging");
+
+    if (event.dataTransfer.files.length > 0) {
+        handleFile(event.dataTransfer.files[0]);
+    }
+});
+
+// Handle selected file
+function handleFile(file) {
+    if (file.type !== "application/pdf") {
+        alert("Please select a PDF file.");
+        return;
+    }
+
+    selectedFile = file;
+
+    selected.textContent = `Selected: ${file.name}`;
+    selected.hidden = false;
+
+    controls.hidden = false;
+    convertBtn.hidden = false;
+
+    status.textContent = "PDF ready to convert.";
 }
 
+// Convert PDF
 convertBtn.addEventListener("click", async () => {
     if (!selectedFile) {
         alert("Please select a PDF first.");
         return;
     }
 
-    if (selectedFile.type !== "application/pdf") {
-        alert("Please select a PDF file.");
-        return;
-    }
-
-    results.innerHTML = "";
-    progress.style.width = "0%";
     convertBtn.disabled = true;
+    progress.hidden = false;
+    progressBar.style.width = "0%";
+    results.innerHTML = "";
+    status.textContent = "Loading PDF...";
 
     try {
         const arrayBuffer = await selectedFile.arrayBuffer();
@@ -76,17 +98,12 @@ convertBtn.addEventListener("click", async () => {
         const totalPages = pdf.numPages;
 
         for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+            status.textContent =
+                `Converting page ${pageNumber} of ${totalPages}...`;
+
             const page = await pdf.getPage(pageNumber);
 
-            let scale = 1.5;
-
-            if (scaleSelect.value === "high") {
-                scale = 2;
-            }
-
-            if (scaleSelect.value === "very-high") {
-                scale = 3;
-            }
+            const scale = Number(scaleSelect.value);
 
             const viewport = page.getViewport({
                 scale: scale
@@ -110,6 +127,11 @@ convertBtn.addEventListener("click", async () => {
                     ? "image/png"
                     : "image/jpeg";
 
+            const extension =
+                format === "png"
+                    ? "png"
+                    : "jpg";
+
             const imageData = canvas.toDataURL(
                 mimeType,
                 0.92
@@ -118,9 +140,8 @@ convertBtn.addEventListener("click", async () => {
             const link = document.createElement("a");
 
             link.href = imageData;
-
             link.download =
-                `fileflip-page-${pageNumber}.${format}`;
+                `fileflip-page-${pageNumber}.${extension}`;
 
             link.textContent =
                 `Download Page ${pageNumber}`;
@@ -131,10 +152,12 @@ convertBtn.addEventListener("click", async () => {
 
             resultItem.className = "result-item";
 
-            resultItem.innerHTML = `
-                <span>Page ${pageNumber}</span>
-            `;
+            const pageLabel = document.createElement("span");
 
+            pageLabel.textContent =
+                `Page ${pageNumber}`;
+
+            resultItem.appendChild(pageLabel);
             resultItem.appendChild(link);
 
             results.appendChild(resultItem);
@@ -142,13 +165,22 @@ convertBtn.addEventListener("click", async () => {
             const percentage =
                 (pageNumber / totalPages) * 100;
 
-            progress.style.width =
+            progressBar.style.width =
                 `${percentage}%`;
         }
 
+        status.textContent =
+            `Done! ${totalPages} page${totalPages === 1 ? "" : "s"} converted.`;
+
     } catch (error) {
         console.error(error);
-        alert("Something went wrong while converting the PDF.");
+
+        status.textContent =
+            "Something went wrong while converting the PDF.";
+
+        alert(
+            "Something went wrong while converting the PDF. Please try again."
+        );
     }
 
     convertBtn.disabled = false;

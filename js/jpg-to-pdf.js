@@ -1,45 +1,73 @@
 const fileInput = document.getElementById("fileInput");
-const dropZone = document.getElementById("dropZone");
-const createPdfBtn = document.getElementById("createPdfBtn");
-const results = document.getElementById("results");
+const dropzone = document.getElementById("dropzone");
+const chooseBtn = document.getElementById("chooseBtn");
+const preview = document.getElementById("preview");
+const createBtn = document.getElementById("createBtn");
 const status = document.getElementById("status");
 
 let selectedFiles = [];
 
+// Choose images button
+chooseBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    fileInput.click();
+});
+
+// Dropzone click
+dropzone.addEventListener("click", () => {
+    fileInput.click();
+});
+
+// Files selected
 fileInput.addEventListener("change", () => {
     selectedFiles = Array.from(fileInput.files);
     showPreview();
 });
 
-dropZone.addEventListener("click", () => {
-    fileInput.click();
-});
-
-dropZone.addEventListener("dragover", (event) => {
+// Drag over
+dropzone.addEventListener("dragover", (event) => {
     event.preventDefault();
-    dropZone.classList.add("dragging");
+    dropzone.classList.add("dragging");
 });
 
-dropZone.addEventListener("dragleave", () => {
-    dropZone.classList.remove("dragging");
+// Drag leave
+dropzone.addEventListener("dragleave", () => {
+    dropzone.classList.remove("dragging");
 });
 
-dropZone.addEventListener("drop", (event) => {
+// Drop images
+dropzone.addEventListener("drop", (event) => {
     event.preventDefault();
 
-    dropZone.classList.remove("dragging");
+    dropzone.classList.remove("dragging");
 
-    selectedFiles = Array.from(
-        event.dataTransfer.files
-    );
+    selectedFiles = Array.from(event.dataTransfer.files);
 
     showPreview();
 });
 
+// Show selected images
 function showPreview() {
-    results.innerHTML = "";
+    preview.innerHTML = "";
 
     if (selectedFiles.length === 0) {
+        createBtn.hidden = true;
+        status.textContent = "";
+        return;
+    }
+
+    const validFiles = selectedFiles.filter((file) =>
+        ["image/jpeg", "image/png", "image/webp"].includes(file.type)
+    );
+
+    if (validFiles.length !== selectedFiles.length) {
+        alert("Please select only JPG, PNG, or WebP images.");
+    }
+
+    selectedFiles = validFiles;
+
+    if (selectedFiles.length === 0) {
+        createBtn.hidden = true;
         status.textContent = "";
         return;
     }
@@ -51,59 +79,59 @@ function showPreview() {
         const item = document.createElement("div");
 
         item.className = "result-item";
-
         item.textContent = file.name;
 
-        results.appendChild(item);
+        preview.appendChild(item);
     });
+
+    createBtn.hidden = false;
 }
 
-createPdfBtn.addEventListener("click", async () => {
+// Create PDF
+createBtn.addEventListener("click", async () => {
     if (selectedFiles.length === 0) {
         alert("Please select at least one image.");
         return;
     }
 
-    createPdfBtn.disabled = true;
-
+    createBtn.disabled = true;
     status.textContent = "Creating PDF...";
 
     try {
         const pdfDoc = await PDFLib.PDFDocument.create();
 
         for (const file of selectedFiles) {
-            let imageBytes = await file.arrayBuffer();
-
             let image;
 
-            if (file.type === "image/png") {
-                image = await pdfDoc.embedPng(imageBytes);
-            } else if (file.type === "image/jpeg") {
+            if (file.type === "image/jpeg") {
+                const imageBytes = await file.arrayBuffer();
                 image = await pdfDoc.embedJpg(imageBytes);
-            } else if (file.type === "image/webp") {
-                const convertedData =
-                    await convertWebPToPng(file);
+            }
 
-                image = await pdfDoc.embedPng(
-                    convertedData
-                );
-            } else {
+            else if (file.type === "image/png") {
+                const imageBytes = await file.arrayBuffer();
+                image = await pdfDoc.embedPng(imageBytes);
+            }
+
+            else if (file.type === "image/webp") {
+                const pngBytes = await convertWebPToPng(file);
+                image = await pdfDoc.embedPng(pngBytes);
+            }
+
+            if (!image) {
                 continue;
             }
 
-            const width = image.width;
-            const height = image.height;
-
             const page = pdfDoc.addPage([
-                width,
-                height
+                image.width,
+                image.height
             ]);
 
             page.drawImage(image, {
                 x: 0,
                 y: 0,
-                width: width,
-                height: height
+                width: image.width,
+                height: image.height
             });
         }
 
@@ -111,9 +139,7 @@ createPdfBtn.addEventListener("click", async () => {
 
         const blob = new Blob(
             [pdfBytes],
-            {
-                type: "application/pdf"
-            }
+            { type: "application/pdf" }
         );
 
         const url = URL.createObjectURL(blob);
@@ -124,9 +150,7 @@ createPdfBtn.addEventListener("click", async () => {
         link.download = "fileflip-document.pdf";
 
         document.body.appendChild(link);
-
         link.click();
-
         link.remove();
 
         URL.revokeObjectURL(url);
@@ -139,11 +163,16 @@ createPdfBtn.addEventListener("click", async () => {
 
         status.textContent =
             "Something went wrong while creating the PDF.";
+
+        alert(
+            "Something went wrong while creating the PDF."
+        );
     }
 
-    createPdfBtn.disabled = false;
+    createBtn.disabled = false;
 });
 
+// Convert WebP to PNG
 function convertWebPToPng(file) {
     return new Promise((resolve, reject) => {
         const image = new Image();
@@ -151,14 +180,12 @@ function convertWebPToPng(file) {
         const url = URL.createObjectURL(file);
 
         image.onload = () => {
-            const canvas =
-                document.createElement("canvas");
+            const canvas = document.createElement("canvas");
 
             canvas.width = image.width;
             canvas.height = image.height;
 
-            const context =
-                canvas.getContext("2d");
+            const context = canvas.getContext("2d");
 
             context.drawImage(
                 image,
@@ -168,6 +195,13 @@ function convertWebPToPng(file) {
 
             canvas.toBlob(
                 (blob) => {
+                    if (!blob) {
+                        reject(
+                            new Error("Could not convert WebP image.")
+                        );
+                        return;
+                    }
+
                     blob.arrayBuffer()
                         .then(resolve)
                         .catch(reject);
@@ -178,7 +212,12 @@ function convertWebPToPng(file) {
             URL.revokeObjectURL(url);
         };
 
-        image.onerror = reject;
+        image.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(
+                new Error("Could not load WebP image.")
+            );
+        };
 
         image.src = url;
     });
